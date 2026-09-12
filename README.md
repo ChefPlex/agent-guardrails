@@ -1,6 +1,6 @@
 # agent-guardrails
 
-Two checks for AI agent workflows that refuse to report a pass they did not earn.
+Three checks for AI agent workflows that refuse to report a pass they did not earn.
 
 Both came out of running an always-on personal agent stack and finding, repeatedly, that the
 controls I had written were reporting health they had never verified. They are deliberately small,
@@ -50,6 +50,29 @@ the finding. This caught a security control being loosened on evidence from the 
 method measured a 5.8% false-positive rate against a proxy population, the second path measured 0 of
 7 against the real one, and the conclusion reversed.
 
+## `run-n.sh` — report the spread, and never the exit code
+
+An eval suite that calls a model is not deterministic. One run of mine scored **3/4** and an
+immediate re-run, identical inputs, no code change, scored **4/4**.
+
+**So a single green run is not evidence, and a single red one is not either.** Without a measured
+noise floor, no change can honestly be called an improvement — a before/after of two single runs
+cannot separate a real effect from sampling noise or a silent model update on the provider's side.
+
+```bash
+bash run-n.sh 5        # runs N times, reports mean / min / max / sd
+```
+
+When the runs disagree it says so outright, and names the consequence: *any before/after claim
+smaller than that spread is noise, not a result.* When they agree it calls that a **noise floor, not
+a guarantee**, because stability over a few runs is weak evidence and not determinism.
+
+⛔ **And it never reads the exit code.** `npx promptfoo eval` **exits 0 even when cases fail** —
+confirmed, three of four passing, exit 0. It parses the results file instead. Anything else that
+runs that suite should do the same.
+
+*(Written against promptfoo; the shape applies to any eval runner that reports results in a file.)*
+
 ---
 
 ## Running the tests
@@ -57,6 +80,7 @@ method measured a 5.8% false-positive rate against a proxy population, the secon
 ```bash
 python3 injection_scan_test.py
 python3 second_path_test.py
+python3 run-n_test.py
 ```
 
 Every assertion is exercised against both a passing and a failing input, so a check that returned
