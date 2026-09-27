@@ -4,14 +4,14 @@
 🔴 THE FALSE-POSITIVE HALF IS THE IMPORTANT HALF, and it is why this file is longer than it looks
 like it needs to be. A screen that fires on ordinary recruiter mail and job postings gets muted by
 its own noise inside a week, and a muted control is worse than no control because everyone believes
-it is running. Every string in `CLEAN` is real-shaped text from the corpus this thing will actually
-read: job postings, ATS acknowledgements, recruiter notes, Jack's pipeline mail.
+it is running. Every string in `CLEAN` is real-shaped text of the kind this thing will actually
+read: job postings, ATS acknowledgements, recruiter notes, pipeline mail.
 
-⚠️ House rule, your agent's instruction file: *a test written to match the implementation is not a test.*
+⚠️ House rule: *a test written to match the implementation is not a test.*
 So the DIRTY cases below were written as "what would an attacker actually put in a job posting or an
 email to get an agent with a shell to misbehave", not by reading the regexes and echoing them back.
 
-Run: python3 automation/injection_scan_test.py
+Run: python3 injection_scan_test.py
 """
 import pathlib
 import sys
@@ -71,80 +71,80 @@ CLEAN = [
 ]
 
 
+CORPUS = pathlib.Path(__file__).resolve().parent / "corpus"
+
+
 def real_corpus():
-    """Run the screen against REAL archived third-party text — improvement #90, 2026-09-02.
+    """Run the screen against REAL archived third-party text, if the operator has supplied some.
 
-    🔴 WHY THIS WAS ADDED, and the docstring above is the confession. It says every CLEAN string
-    is "real-SHAPED text from the corpus this thing will actually read." Real-shaped is not real.
-    A suite made entirely of strings its own author typed asserts on a SHAPE; it cannot tell you
-    whether the job works. `mail-alert.py` passed 40 such tests and then produced 13 false
-    positives out of 14 on real mail. `validate-writes.py` shipped with a missing `re.M` past a
-    full green suite. This function is the acceptance gate those two needed and did not have.
+    Returns (failures, ran). `ran` is False when there was no gated corpus to read, and the
+    caller must then say "real-corpus gate NOT RUN", never "ok".
 
-    ⚖️ WHAT IS A GATE AND WHAT IS ONLY DIAGNOSTIC — this distinction IS improvement #90.
-    GATE:       the corpora a live path actually consumes and that are known-clean. A finding
-                here is a real false positive and fails the build.
-    DIAGNOSTIC: a rate printed for a human to read. Never a pass/fail. An intermediate metric
-                used as an acceptance gate can improve while the end task degrades.
+    🔴 WHY THIS EXISTS. The docstring above says every CLEAN string is "real-SHAPED text".
+    Real-shaped is not real. A suite made entirely of strings its own author typed asserts on a
+    SHAPE; it cannot tell you whether the job works. In the stack this came from, a mail alert
+    passed 40 such tests and then produced 13 false positives out of 14 on real mail, and a write
+    validator shipped with a missing `re.M` past a full green suite. This is the acceptance gate
+    those two needed and did not have.
 
-    🪤 MEASURED 2026-09-02, and it found something the fixtures could not:
-        job descriptions (42 real postings)  0 findings   ✅
-        Inputs/ staged material              0 findings   ✅
-        reference/ AI documentation          7 findings, ALL SEVEN FALSE POSITIVES —
+    ⛔ IT NEVER READS OUTSIDE THIS REPO. The corpus lives in `corpus/` next to this file, which is
+    gitignored because real mail and postings are not publishable. A fresh clone has no corpus, so
+    on a fresh clone this gate does NOT run, and the verdict line says so.
+        corpus/clean/**       GATE. Text a live path consumes and that is known-clean. A finding
+                              here is a real false positive and fails the build.
+        corpus/diagnostic/**  DIAGNOSTIC. A rate printed for a human to read, never pass/fail.
+                              An intermediate metric used as an acceptance gate can improve while
+                              the end task degrades.
+
+    🪤 MEASURED 2026-09-02 on the original corpora, and it found something the fixtures could not:
+        job descriptions (42 real postings)  0 findings
+        staged intake material               0 findings
+        AI documentation (diagnostic)        7 findings, ALL SEVEN FALSE POSITIVES, e.g.
             "Override the system prompt" (a config table)      -> HIGH instruction-override
             "you should always call close()"                   -> HIGH tool-coercion
-            "Enter your email address and the app password"    -> HIGH exfiltration
             "if urgency exceeds 0.8, the router returns..."     -> MEDIUM authority-spoof
-    ⚠️ THAT LAST ROW IS A LIVE RISK, NOT A CURIOSITY. `/pulse` is a WEEKLY AI-NEWS SCAN and
-    `/research` fetches arbitrary pages; both pipe what they fetch through this screen. Writing
-    about agents is the genre that scored 7 for 7. A tripwire that fires on every article about
-    prompts is one that gets muted, and CLAUDE.md already calls this "a TRIPWIRE, not a defense."
-    ⛔ NOT FIXED HERE ON PURPOSE. Loosening a security screen is the operator's call, not a side effect
-    of writing its test. It is recorded as a diagnostic so the next session sees the number.
+    ⚠️ Writing about agents is the genre that scored 7 for 7, and a news scan or a research fetch
+    reads exactly that genre. ⛔ NOT FIXED HERE ON PURPOSE. Loosening a security screen is the
+    operator's call, not a side effect of writing its test.
     """
-    import pathlib
-    HQ = pathlib.Path(__file__).resolve().parent.parent
     out = []
     scanned = 0
 
     # ── GATE ────────────────────────────────────────────────────────────────────────────
-    gated = {
-        "job descriptions": sorted((HQ / "Resumes_CoverLetter" / "_jd").glob("*.txt")),
-        "Inputs staged":    sorted(HQ.glob("Inputs/**/*.md"))[:120],
-    }
-    for label, files in gated.items():
-        if not files:
-            print(f"  real-corpus: {label} UNAVAILABLE — not counted as a pass")
+    files = sorted(p for p in (CORPUS / "clean").glob("**/*")
+                   if p.is_file() and p.suffix in (".txt", ".md"))
+    if not files:
+        print(f"  real-corpus GATE  NOT RUN: no files under {CORPUS.name}/clean/ in this repo")
+        return out, False
+    fired = 0
+    for f in files:
+        try:
+            text = f.read_text(errors="ignore")
+        except Exception:
             continue
-        fired = 0
-        for f in files:
-            try:
-                text = f.read_text(errors="ignore")
-            except Exception:
-                continue
-            for fd in scan(text):
-                fired += 1
-                out.append(f"FALSE+  real corpus [{label}] {f.name}: {fd[1]}({fd[0]})")
-        scanned += len(files)
-        print(f"  real-corpus GATE  {label}: {len(files)} documents, {fired} finding(s)")
+        scanned += 1
+        for fd in scan(text):
+            fired += 1
+            out.append(f"FALSE+  real corpus {f.name}: {fd[1]}({fd[0]})")
+    print(f"  real-corpus GATE  {scanned} documents, {fired} finding(s)")
 
     # ── DIAGNOSTIC — printed, never asserted ────────────────────────────────────────────
-    ref = sorted(HQ.glob("reference/**/*.md"))[:120]
-    if ref:
-        hits = sum(1 for f in ref if scan(f.read_text(errors="ignore")))
-        pct = 100 * hits / len(ref)
-        print(f"  real-corpus DIAG  reference/ AI docs: {hits}/{len(ref)} fired ({pct:.1f}%) "
-              f"— diagnostic only, NOT a gate. See this function's docstring.")
-    # The standard declaration liveness-sweep's `outcomes` leg reads (improvement #90). It counts
-    # ONLY gated documents — the diagnostic corpus above is deliberately excluded, or a suite
-    # could satisfy the contract without any real acceptance criterion behind it.
+    diag = sorted(p for p in (CORPUS / "diagnostic").glob("**/*")
+                  if p.is_file() and p.suffix in (".txt", ".md"))
+    if diag:
+        hits = sum(1 for f in diag if scan(f.read_text(errors="ignore")))
+        pct = 100 * hits / len(diag)
+        print(f"  real-corpus DIAG  {hits}/{len(diag)} fired ({pct:.1f}%) "
+              f"(diagnostic only, NOT a gate)")
+    # Counts ONLY gated documents. The diagnostic corpus is deliberately excluded, or a suite
+    # could claim a real-corpus pass without any real acceptance criterion behind it.
     print(f"  real-corpus: {scanned} gated document(s)")
-    return out
+    return out, scanned > 0
 
 
 
-# --- #241 / #240, 2026-09-09 ---------------------------------------------------------------------
-# 🔑 THE ONE PROPERTY THAT MATTERS: the label NEVER suppresses. the operator, 2026-09-09: "I would rather
+# --- documentation label and inspection boundary, 2026-09-09 ------------------------------------
+# 🔑 THE ONE PROPERTY THAT MATTERS: the label NEVER suppresses. The operator's rule: "I would rather
 # have false positives than false negatives." So every case below asserts the finding still FIRES
 # and keeps its severity; the label is additional text, never a filter. A test that only checked
 # "documentation gets labelled" would pass on an implementation that silently dropped the finding,
@@ -250,7 +250,7 @@ def label_tests():
 
 
 def boundary_tests():
-    """#240: an UNREADABLE file is an UNKNOWN, not a pass -- it must not exit 0."""
+    """An UNREADABLE file is an UNKNOWN, not a pass -- it must not exit 0."""
     import subprocess, tempfile, os, stat
     out = []
     script = str(pathlib.Path(__file__).with_name("injection_scan.py"))
@@ -293,7 +293,8 @@ def main():
             got = ", ".join(f"{f[1]}({f[0]})" for f in findings)
             failures.append(f"FALSE+  fired [{got}] on legitimate text: {text[:70]}")
 
-    failures += real_corpus()
+    corpus_failures, corpus_ran = real_corpus()
+    failures += corpus_failures
     failures += label_tests()
     failures += code_block_tests()
     failures += boundary_tests()
@@ -304,9 +305,15 @@ def main():
         for f in failures:
             print(f"  {f}")
         return 1
-    print(f"ok  {len(DIRTY)} injection cases caught, {len(CLEAN)} legitimate strings left alone")
-    print(f"    {len(label_cases())} #241 label cases + {len(code_block_cases())} fenced-code cases, "
-          f"none suppressed; #240 boundary exit codes hold")
+    print(f"    {len(DIRTY)} injection cases caught, {len(CLEAN)} legitimate strings left alone")
+    print(f"    {len(label_cases())} label cases + {len(code_block_cases())} fenced-code cases, "
+          f"none suppressed; boundary exit codes hold")
+    if not corpus_ran:
+        # ⛔ Not "ok". The fixtures passed; the real-corpus gate did not run, and a verdict that
+        # does not say so reports an unknown as a pass.
+        print("FIXTURES PASS, real-corpus gate NOT RUN (add known-clean text under corpus/clean/)")
+        return 0
+    print("ok  fixtures and real-corpus gate pass")
     return 0
 
 

@@ -2,9 +2,10 @@
 
 Three checks for AI agent workflows that refuse to report a pass they did not earn.
 
-Both came out of running an always-on personal agent stack and finding, repeatedly, that the
-controls I had written were reporting health they had never verified. They are deliberately small,
-have no dependencies beyond the standard library, and run anywhere Python 3 runs.
+All three came out of running an always-on personal agent stack and finding, repeatedly, that the
+controls I had written were reporting health they had never verified. They are deliberately small.
+`injection_scan.py` and `second_path.py` need only the Python 3 standard library. `run-n.sh` also
+needs bash and Node (it calls `npx promptfoo`), because it drives an external eval runner.
 
 ---
 
@@ -31,6 +32,15 @@ instructions.* This only makes that rule visible at ingestion time.
 **Tuning bias:** false positives are cheap, false negatives are not. If you disagree, change it
 deliberately rather than by loosening a pattern that fired on you once.
 
+**Measured noise:** run over 478 third-party markdown files, it fired on 28, and none of the 28 was
+a real attack. Every hit was a document quoting an attack in order to defend against it, which is
+why those hits carry a "likely security documentation" label (a label, never a filter). Recall,
+meaning how many real attacks it misses, has not been measured.
+
+**Who reads the output, and how failure shows:** the operator, before the agent acts on the text.
+Findings exit 1, and so does an unreadable file, which is reported as unknown rather than clean.
+Every run prints what it did and did not inspect.
+
 Set who the agent answers to, so the authority-spoof rule knows what to look for:
 
 ```bash
@@ -50,6 +60,16 @@ the finding. This caught a security control being loosened on evidence from the 
 method measured a 5.8% false-positive rate against a proxy population, the second path measured 0 of
 7 against the real one, and the conclusion reversed.
 
+The same logic applies to agents checking agents. A differently shaped method brings failure-mode
+diversity: it would still find the item if the first method's assumption were wrong. N agents that
+share a model, a prompt shape and a sourcing method are closer to one sample drawn N times, so
+their agreement is not verification. They can all inherit the same blind spot, and N identical
+wrong answers read as corroboration.
+
+**Who reads the output, and how failure shows:** the caller, usually a test or a scheduled sweep.
+`compare()` returns a result that is falsy on disagreement and names both sides; `report()` exits 1
+if any population disagrees.
+
 ## `run-n.sh` — report the spread, and never the exit code
 
 An eval suite that calls a model is not deterministic. One run of mine scored **3/4** and an
@@ -60,16 +80,24 @@ noise floor, no change can honestly be called an improvement — a before/after 
 cannot separate a real effect from sampling noise or a silent model update on the provider's side.
 
 ```bash
-bash run-n.sh 5        # runs N times, reports mean / min / max / sd
+bash run-n.sh path/to/suite 5   # suite dir holds promptfooconfig.yaml; reports mean / min / max / sd
 ```
+
+Requires bash, Python 3 and Node. The promptfoo version is pinned in the script so two runs a month
+apart measure the suite, not a runner upgrade; override it deliberately with `PROMPTFOO_VERSION`.
+
+**Who reads the output, and how failure shows:** whoever is about to claim a change improved the
+suite, or a CI step. The script's own exit code comes from the parsed results: `0` all runs parsed
+and agreed, `1` instrument failure (no run, or not every run, produced parseable results), `2` usage
+error, `3` the runs disagreed.
 
 When the runs disagree it says so outright, and names the consequence: *any before/after claim
 smaller than that spread is noise, not a result.* When they agree it calls that a **noise floor, not
 a guarantee**, because stability over a few runs is weak evidence and not determinism.
 
-⛔ **And it never reads the exit code.** `npx promptfoo eval` **exits 0 even when cases fail** —
-confirmed, three of four passing, exit 0. It parses the results file instead. Anything else that
-runs that suite should do the same.
+⛔ **And it never reads promptfoo's exit code.** `npx promptfoo eval` **exits 0 even when cases
+fail**, confirmed: three of four passing, exit 0. It parses the results file instead, and sets its
+own exit code from that. Anything else that runs that suite should do the same.
 
 *(Written against promptfoo; the shape applies to any eval runner that reports results in a file.)*
 
@@ -82,6 +110,12 @@ python3 injection_scan_test.py
 python3 second_path_test.py
 python3 run-n_test.py
 ```
+
+`run-n_test.py` runs the real script end to end against a fake `npx` that writes fixture results and
+always exits 0, as promptfoo does. It does not run real promptfoo or call a model, so a change in
+promptfoo's output format is not covered; that case shows up as exit 1, "no parseable results".
+`injection_scan_test.py` also runs a real-corpus gate over known-clean text you place in `corpus/`
+(gitignored). A fresh clone has no corpus, so its last line reads "real-corpus gate NOT RUN".
 
 Every assertion is exercised against both a passing and a failing input, so a check that returned
 unconditionally is caught by the negative case rather than flattered by the positive one. The

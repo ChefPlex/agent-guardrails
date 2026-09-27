@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Count the population twice, by DIFFERENTLY SHAPED methods, and assert the two agree.
 
-Improvement #137. Written 2026-09-02.
+Written 2026-09-02.
 
 WHY THIS EXISTS
 ---------------
@@ -11,18 +11,18 @@ smaller population, finds nothing missing inside it, and prints green. **A check
 members it never enumerated.**
 
 MEASURED FIVE TIMES, and only one of the five was caught by a check rather than by a human looking:
-  * `injection_scan.py` measured 5.8% false positives against `reference/` as a proxy corpus and
-    **0 of 7** against the real `/pulse` output. The second path reversed the conclusion and
-    stopped a security control being loosened on evidence from the wrong population.
-  * `handoff-check.py`'s path scan counted **2** paths in a document naming **11** — its regex
-    required a `/`, so every bare filename was invisible. It reported "all 2 exist" and passed.
-  * That same file's improvement-id regex capped at four digits, so a five-digit id enumerated to
-    NOTHING and an id absent from the backlog reported OK.
-  * The launchd job count: `automation/launchd/*.plist` said **12** while `schedule.sh` and
-    `launchctl` both said **15**. Four documents restated the wrong one for two weeks — including
-    the restore doc, where verifying a rebuild against it declares success at 10 of 15.
-  * The skills count: prose said **46**, the directory said **38** — in `CLAUDE.md` and in a
-    résumé that goes to employers.
+  * `injection_scan.py` measured 5.8% false positives against a proxy corpus of documentation and
+    **0 of 7** against the real output of the news scan it guards. The second path reversed the
+    conclusion and stopped a security control being loosened on evidence from the wrong population.
+  * A document path checker counted **2** paths in a document naming **11**: its regex required
+    a `/`, so every bare filename was invisible. It reported "all 2 exist" and passed.
+  * That same checker's id regex capped at four digits, so a five-digit id enumerated to NOTHING
+    and an id absent from the backlog reported OK.
+  * A scheduled-job count: the job definition files said **12** while the scheduler itself said
+    **15**. Four documents restated the wrong one for two weeks, including the restore doc, where
+    verifying a rebuild against it declares success at 10 of 15.
+  * A count restated in prose said **46** while the directory it described held **38**, and the
+    prose figure had already been copied into documents that left the system.
 
 Every one is a single-path enumeration that UNDER-reported, and every one would have been caught
 immediately by counting again a different way.
@@ -41,17 +41,16 @@ is the caller's job, and `expected` carries the differences already adjudicated.
 Usage:
     from second_path import compare
     r = compare("mail accounts", declared, keychain,
-                name_a="ACCOUNTS in mailscan.py", name_b="credentials in the Keychain")
+                name_a="accounts declared in config", name_b="credentials in the Keychain")
     if not r.agree:
         print(r.detail)
 
-READ BY
--------
-  * `automation/mail/mailscan_test.py`  - declared accounts vs credentials in the Keychain
-  * `automation/liveness-sweep.py`      - `--only coverage`: does each DOC_GLOB match its
-                                          whole directory, or is it silently under-matching?
-  * `cos/cos_memory.py readers`         - memory files on disk vs memory files tracked by git
-Tests: `automation/second_path_test.py`.
+TYPICAL PAIRS
+-------------
+  * declared accounts in a config file vs credentials actually stored
+  * files a glob matches vs a full walk of the same directory (is the glob silently under-matching?)
+  * files on disk vs files tracked by git
+Tests: `second_path_test.py`.
 """
 from dataclasses import dataclass, field
 
@@ -76,8 +75,7 @@ def compare(label, a, b, *, name_a="path A", name_b="path B", expected=(), limit
     `a` and `b` are iterables of hashable items — normally strings. `expected` holds differences
     already adjudicated: its members are excluded from BOTH sides AND NAMED in the detail, so an
     accepted divergence stays visible instead of being silently subtracted. A suppression nobody
-    ever sees is a suppression nobody re-examines — the rule `liveness-sweep.py` already applies
-    to its own `EXPECTED_ABSENT`.
+    ever sees is a suppression nobody re-examines.
 
     Returns a `Result`, which is truthy when the two paths agree.
     """
@@ -118,7 +116,7 @@ def report(results, header="SECOND-PATH COMPLETENESS"):
     """Print a list of Results in the house style. Returns 0 if all agree, else 1."""
     bad = [r for r in results if not r.agree]
     print("=" * 78)
-    print(f"{header} — count the population twice, by different methods (#137)")
+    print(f"{header}: count the population twice, by different methods")
     print("=" * 78)
     for r in results:
         print(f"\n{'🟢' if r.agree else '🔴'} {r.label}")

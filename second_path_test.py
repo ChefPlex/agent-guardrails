@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Tests for second_path.py (#137). Run: python3 automation/second_path_test.py
+"""Tests for second_path.py. Run: python3 second_path_test.py
 
 ⛔ Every assertion must be able to FAIL. Each behaviour is exercised against BOTH an agreeing and a
 disagreeing population, and the test asserts the two outcomes DIFFER — a `compare` that returned
 `agree=True` unconditionally would pass the positive cases and be caught by the negative ones.
-That is the defect this repo recorded on 2026-09-02, when a test used the live repo as its own
+That is a defect recorded on 2026-09-02, when a test used the live repo as its own
 fixture and four assertions flipped the moment the repo was fixed.
 """
 import importlib.util
