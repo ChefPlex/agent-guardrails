@@ -9,10 +9,10 @@ needs bash and Node (it calls `npx promptfoo`), because it drives an external ev
 
 ---
 
-## `injection_scan.py` — a prompt-injection tripwire for untrusted text
+## `injection_scan.py` - a prompt-injection tripwire for untrusted text
 
-Screens text that arrived from outside your system — an email body, a fetched page, a job posting,
-another agent's reply — for the shapes a prompt injection takes: instruction override, exfiltration,
+Screens text that arrived from outside your system - an email body, a fetched page, a job posting,
+another agent's reply - for the shapes a prompt injection takes: instruction override, exfiltration,
 authority spoofing, encoded payloads, invisible content.
 
 ```bash
@@ -47,18 +47,18 @@ Set who the agent answers to, so the authority-spoof rule knows what to look for
 INJECTION_PRINCIPAL="alice|acme" python3 injection_scan.py suspicious.txt
 ```
 
-## `second_path.py` — count the population twice, by differently shaped methods
+## `second_path.py` - count the population twice, by differently shaped methods
 
 A coverage check answers *"is everything here accounted for?"* using **one** method of deciding what
-"everything" is. When that method is wrong the check does not fail — it reports a smaller
+"everything" is. When that method is wrong the check does not fail - it reports a smaller
 population, finds nothing missing inside it, and prints green.
 
 **A check cannot notice the members it never enumerated.**
 
 So: count twice, by methods that would fail differently, and assert the two agree. A disagreement is
-the finding. This caught a security control being loosened on evidence from the wrong corpus — one
-method measured a 5.8% false-positive rate against a proxy population, the second path measured 0 of
-7 against the real one, and the conclusion reversed.
+the finding. This caught a security control about to be loosened on evidence from the wrong corpus.
+The first method had counted a proxy population, not the population the control actually screens.
+Counting the real one a second way showed the two were not the same set.
 
 The same logic applies to agents checking agents. A differently shaped method brings failure-mode
 diversity: it would still find the item if the first method's assumption were wrong. N agents that
@@ -70,13 +70,13 @@ wrong answers read as corroboration.
 `compare()` returns a result that is falsy on disagreement and names both sides; `report()` exits 1
 if any population disagrees.
 
-## `run-n.sh` — report the spread, and never the exit code
+## `run-n.sh` - report the spread, and never the exit code
 
 An eval suite that calls a model is not deterministic. One run of mine scored **3/4** and an
 immediate re-run, identical inputs, no code change, scored **4/4**.
 
 **So a single green run is not evidence, and a single red one is not either.** Without a measured
-noise floor, no change can honestly be called an improvement — a before/after of two single runs
+noise floor, no change can honestly be called an improvement - a before/after of two single runs
 cannot separate a real effect from sampling noise or a silent model update on the provider's side.
 
 ```bash
@@ -116,14 +116,14 @@ python3 run-n_test.py
 ```
 
 `run-n_test.py` runs the real script end to end against a fake `npx` that writes fixture results and
-always exits 0, as promptfoo does. It does not run real promptfoo or call a model, so a change in
+always exits 0 whatever the results say, so the only way to pass is to read the results. It does not run real promptfoo or call a model, so a change in
 promptfoo's output format is not covered; that case shows up as exit 1, "no parseable results".
 `injection_scan_test.py` also runs a real-corpus gate over known-clean text you place in `corpus/`
 (gitignored). A fresh clone has no corpus, so its last line reads "real-corpus gate NOT RUN".
 
 Every assertion is exercised against both a passing and a failing input, so a check that returned
 unconditionally is caught by the negative case rather than flattered by the positive one. The
-injection tests carry a deliberate corpus of legitimate strings alongside the attacks — a screen
+injection tests carry a deliberate corpus of legitimate strings alongside the attacks - a screen
 that fires on ordinary text gets muted within a week, and then the real one is missed too.
 
 ## Licence
