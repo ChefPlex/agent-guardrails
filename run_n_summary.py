@@ -19,8 +19,9 @@ OK, INSTRUMENT_FAILURE, DISAGREED = 0, 1, 3
 def parse(path):
     """Return (passes, total) from a promptfoo results file, or None if it cannot be read.
 
-    ⛔ This reads the RESULTS FILE. The runner's exit code is never consulted, because
-    `npx promptfoo eval` exits 0 even when cases fail.
+    ⛔ This reads the RESULTS FILE. The runner's exit code is never consulted, because it
+    varies with promptfoo's version and environment settings and does not separate a failed
+    case from a broken runner.
     """
     try:
         with open(path, encoding="utf-8") as fh:

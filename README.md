@@ -95,9 +95,13 @@ When the runs disagree it says so outright, and names the consequence: *any befo
 smaller than that spread is noise, not a result.* When they agree it calls that a **noise floor, not
 a guarantee**, because stability over a few runs is weak evidence and not determinism.
 
-⛔ **And it never reads promptfoo's exit code.** `npx promptfoo eval` **exits 0 even when cases
-fail**, confirmed: three of four passing, exit 0. It parses the results file instead, and sets its
-own exit code from that. Anything else that runs that suite should do the same.
+⛔ **And it never reads promptfoo's exit code.** promptfoo's documented default is exit code `100`
+when any case fails, and two environment variables (`PROMPTFOO_FAILED_TEST_EXIT_CODE`,
+`PROMPTFOO_PASS_RATE_THRESHOLD`) change that. A run here on 2026-09-10 still exited `0` with three
+of four cases passing; the promptfoo version that day was not recorded. An exit code that depends
+on version and environment, and that cannot tell a failed case from a runner that broke, is not a
+verdict. So the script parses the results file instead, and sets its own exit code from that.
+Anything else that runs that suite should do the same.
 
 *(Written against promptfoo; the shape applies to any eval runner that reports results in a file.)*
 

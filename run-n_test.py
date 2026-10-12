@@ -2,9 +2,10 @@
 """Tests for run-n.sh and run_n_summary.py. Run: python3 run-n_test.py
 
 ⛔ These do NOT call a model. They run the REAL script end to end with a fake `npx` first on PATH:
-the fake writes a fixture results file to wherever `-o` points and ALWAYS exits 0, which is exactly
-how promptfoo behaves when cases fail. So every assertion below is about what the script does with
-real input, not about which strings its source contains.
+the fake writes a fixture results file to wherever `-o` points and ALWAYS exits 0, whatever the
+results say, so the script can only get the verdict right by reading the results. So every
+assertion below is about what the script does with real input, not about which strings its source
+contains.
 
 What they pin:
   ① the exit code of promptfoo is not a verdict; the parsed results are
@@ -57,7 +58,7 @@ if pending:
     if nxt.read_text() != "SKIP":
         pathlib.Path(out).write_text(nxt.read_text())
     nxt.unlink()
-sys.exit(0)   # promptfoo exits 0 whether cases passed or failed
+sys.exit(0)   # an exit code that says nothing about the results; the script must not read it
 """
 
 

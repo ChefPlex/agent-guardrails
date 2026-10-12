@@ -10,9 +10,11 @@
 # before/after comparison of two single runs cannot tell a real effect from sampling noise or from
 # a silent model update on the provider's side.
 #
-# ⛔ AND IT PARSES RESULTS, NEVER PROMPTFOO'S EXIT CODE. `npx promptfoo eval` exits 0 even when
-# cases FAIL, confirmed 2026-09-10, 3 of 4 passing, exit 0. Anything that gates on `$?` from
-# promptfoo is reading a number that does not mean what it looks like.
+# ⛔ AND IT PARSES RESULTS, NEVER PROMPTFOO'S EXIT CODE. promptfoo documents exit 100 on any failed
+# case, but PROMPTFOO_FAILED_TEST_EXIT_CODE and PROMPTFOO_PASS_RATE_THRESHOLD change it, and a run
+# on 2026-09-10 (version not recorded) exited 0 with 3 of 4 passing. The code also cannot tell a
+# failed case from a broken runner. Anything that gates on `$?` from promptfoo is reading a number
+# that does not mean what it looks like.
 #
 #     bash run-n.sh SUITE_DIR [N]        # SUITE_DIR holds promptfooconfig.yaml; N defaults to 5
 #
@@ -62,6 +64,6 @@ echo
 python3 "$HERE/run_n_summary.py" summarise "${PASSES[@]}"
 rc=$?
 echo
-echo "  ⛔ promptfoo's exit code was never read; it exits 0 on failures. This script's exit"
+echo "  ⛔ promptfoo's exit code was never read; it varies by version and settings. This script's exit"
 echo "     code ($rc) comes from the parsed results: 0 agreed · 1 instrument failure · 3 disagreed."
 exit "$rc"
