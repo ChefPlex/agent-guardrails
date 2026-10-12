@@ -15,6 +15,7 @@
 # on 2026-09-10 (version not recorded) exited 0 with 3 of 4 passing. The code also cannot tell a
 # failed case from a broken runner. Anything that gates on `$?` from promptfoo is reading a number
 # that does not mean what it looks like.
+# Exit codes and env vars: https://www.promptfoo.dev/docs/usage/command-line/ (checked 2026-10-12)
 #
 #     bash run-n.sh SUITE_DIR [N]        # SUITE_DIR holds promptfooconfig.yaml; N defaults to 5
 #
@@ -22,10 +23,15 @@
 # measure the suite, not a runner upgrade. Override deliberately: PROMPTFOO_VERSION=x.y.z
 #
 # THIS SCRIPT'S OWN EXIT CODE (set from the parsed results, never from promptfoo's):
-#     0  every run parsed and every run agreed
-#     1  instrument failure: no run parsed, or some runs did not
+#     0  every run parsed, ran the same non-zero number of cases with no errors, and agreed.
+#        Agreement, not a pass: 0 of 4 every time also exits 0, and is printed in red.
+#     1  instrument failure: no run parsed, some runs did not, a run executed zero cases,
+#        the runs executed different numbers of cases, or a case errored
 #     2  usage error, or SUITE_DIR not found
 #     3  the runs disagreed with each other
+#
+# The pin covers promptfoo itself. npx resolves promptfoo's own dependencies at install time
+# from their version ranges, so those are not locked by this script.
 #
 set -uo pipefail
 SUITE="${1:-}"
@@ -55,9 +61,11 @@ for i in $(seq 1 "$N"); do
     out="$TMP/run$i.json"
     npx --yes "promptfoo@$PROMPTFOO_VERSION" eval --no-cache -o "$out" >/dev/null 2>&1
     # 🔑 Read the RESULTS file. promptfoo's exit code is deliberately ignored; see the header.
-    read -r p t < <(python3 "$HERE/run_n_summary.py" parse "$out")
-    PASSES+=("$p")
-    printf "  run %-2s  %s / %s\n" "$i" "$p" "$t"
+    # The total and the error count travel with the pass count: a pass count without the number
+    # of cases it was out of cannot tell 0 of 0 from 4 of 4.
+    read -r p t e < <(python3 "$HERE/run_n_summary.py" parse "$out")
+    PASSES+=("$p/$t/$e")
+    printf "  run %-2s  %s / %s  (errors: %s)\n" "$i" "$p" "$t" "$e"
 done
 
 echo
@@ -65,5 +73,5 @@ python3 "$HERE/run_n_summary.py" summarise "${PASSES[@]}"
 rc=$?
 echo
 echo "  ⛔ promptfoo's exit code was never read; it varies by version and settings. This script's exit"
-echo "     code ($rc) comes from the parsed results: 0 agreed · 1 instrument failure · 3 disagreed."
+echo "     code ($rc) comes from the parsed results: 0 agreed (not passed) · 1 instrument failure · 3 disagreed."
 exit "$rc"

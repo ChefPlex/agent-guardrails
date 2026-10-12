@@ -11,9 +11,12 @@ smaller population, finds nothing missing inside it, and prints green. **A check
 members it never enumerated.**
 
 MEASURED FIVE TIMES, and only one of the five was caught by a check rather than by a human looking:
-  * `injection_scan.py` measured 5.8% false positives against a proxy corpus of documentation and
-    **0 of 7** against the real output of the news scan it guards. The second path reversed the
-    conclusion and stopped a security control being loosened on evidence from the wrong population.
+  * `injection_scan.py`, both measured 2026-09-02: 5.8% false positives against a proxy corpus of
+    documentation, and **0 of 7** against the real output of the news scan it guards. The proxy
+    number argued for loosening the screen. The second path showed the proxy was the wrong
+    population to judge it by, and stopped a security control being loosened on that evidence.
+    (A separate run on 2026-09-09, 28 of 478 third-party markdown files, is the one quoted in
+    `injection_scan.py`.)
   * A document path checker counted **2** paths in a document naming **11**: its regex required
     a `/`, so every bare filename was invisible. It reported "all 2 exist" and passed.
   * That same checker's id regex capped at four digits, so a five-digit id enumerated to NOTHING
@@ -88,11 +91,11 @@ def compare(label, a, b, *, name_a="path A", name_b="path B", expected=(), limit
         head = ", ".join(str(i) for i in items[:limit])
         return head + (f" … (+{len(items) - limit} more)" if len(items) > limit else "")
 
+    used = sorted(ex & (sa | sb))
     if agree:
         # ⚠️ Do NOT write "{a} == {b}" when `expected` excluded something: the raw counts can
         # legitimately differ while the populations agree, and "38 == 39" is a false statement
         # printed by a check whose whole job is to catch false statements about counts.
-        used = sorted(ex & (sa | sb))
         if used:
             detail = (f"{len(sa)} and {len(sb)}, agreeing after {len(used)} adjudicated "
                       f"difference(s): {_fmt(used)}")
@@ -104,6 +107,8 @@ def compare(label, a, b, *, name_a="path A", name_b="path B", expected=(), limit
             parts.append(f"  only in {name_a} ({len(only_a)}): {_fmt(only_a)}")
         if only_b:
             parts.append(f"  only in {name_b} ({len(only_b)}): {_fmt(only_b)}")
+        if used:
+            parts.append(f"  excluded as adjudicated ({len(used)}): {_fmt(used)}")
         parts.append("  ⛔ Neither side is assumed correct. Decide which is right and fix that one "
                      "— or add it to `expected`, with a reason, if the difference is deliberate.")
         detail = "\n".join(parts)

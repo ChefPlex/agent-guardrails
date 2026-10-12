@@ -61,6 +61,8 @@ check(r_ex_unused.agree and "==" in r_ex_unused.detail,
 r_ex_partial = sp.compare("x", [1, 2], [2, 3], name_a="A", name_b="B", expected=[1])
 check(not r_ex_partial.agree, "an unadjudicated difference still fails")
 check(r_ex_partial.only_b == [3], "and only the un-excused member is reported")
+check("excluded as adjudicated (1): 1" in r_ex_partial.detail,
+      "and the adjudicated exclusion is still named when the paths disagree")
 
 print("\nempty and edge populations")
 check(sp.compare("x", [], []).agree, "two empty populations agree")
