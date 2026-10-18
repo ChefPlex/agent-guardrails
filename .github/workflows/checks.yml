@@ -1,0 +1,25 @@
+# Keeps this repository honest as it changes: every internal link must resolve, and every test
+# passes. The opt-in run-n_integration_test.py is not run here: it fetches promptfoo from npm.
+# Actions are pinned to full commit SHAs, so a moved tag cannot change what runs here.
+name: checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Internal links resolve
+        run: python3 .github/check_links.py
+      - name: Injection scanner tests
+        run: python3 injection_scan_test.py
+      - name: Second-path tests
+        run: python3 second_path_test.py
+      - name: run-n tests (against a fake npx; no model is called)
+        run: python3 run-n_test.py

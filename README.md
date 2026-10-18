@@ -166,4 +166,9 @@ that fires on ordinary text gets muted within a week, and then the real one is m
 
 ## License
 
-MIT.
+Copyright (c) 2026 Eric White. [MIT](LICENSE), code and documentation alike: use it in your own
+tooling, commercial or not, with the notice kept.
+
+---
+
+**Part of the ChefPlex TPM portfolio** · Status: Active · [I need to… find the right document across all the repositories](https://github.com/ChefPlex/tpm-templates/blob/main/PORTFOLIO-GUIDE.md) · [All repositories](https://github.com/ChefPlex)
