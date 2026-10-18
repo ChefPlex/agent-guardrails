@@ -118,11 +118,19 @@ def compare(label, a, b, *, name_a="path A", name_b="path B", expected=(), limit
 
 
 def report(results, header="SECOND-PATH COMPLETENESS"):
-    """Print a list of Results in the house style. Returns 0 if all agree, else 1."""
+    """Print a list of Results in the house style. Returns 0 if all agree, 1 if any disagree,
+    and 2 if there is nothing to compare.
+
+    An EMPTY list is not "all agree": it means the caller built no comparisons, so nothing was
+    checked. Returning 0 for it would report success for a check that never ran."""
     bad = [r for r in results if not r.agree]
     print("=" * 78)
     print(f"{header}: count the population twice, by different methods")
     print("=" * 78)
+    if not results:
+        print("\n🔴 NO POPULATIONS WERE COMPARED. Nothing was checked; that is an instrument "
+              "failure, not agreement.")
+        return 2
     for r in results:
         print(f"\n{'🟢' if r.agree else '🔴'} {r.label}")
         for line in r.detail.splitlines():

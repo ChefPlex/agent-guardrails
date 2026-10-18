@@ -27,7 +27,7 @@
 #        Agreement, not a pass: 0 of 4 every time also exits 0, and is printed in red.
 #     1  instrument failure: no run parsed, some runs did not, a run executed zero cases,
 #        the runs executed different numbers of cases, or a case errored
-#     2  usage error, or SUITE_DIR not found
+#     2  usage error, SUITE_DIR not found, or N above RUN_N_MAX (default 25)
 #     3  the runs disagreed with each other
 #
 # The pin covers promptfoo itself. npx resolves promptfoo's own dependencies at install time
@@ -47,6 +47,14 @@ if [[ ! "$N" =~ ^[1-9][0-9]*$ ]]; then
     echo "⛔ N must be a positive integer, got: $N" >&2
     exit 2
 fi
+# Every run calls a model, so N is also a spend. A cap stops a typo (500 for 5) from becoming
+# a large bill. Raise it deliberately: RUN_N_MAX=100 bash run-n.sh SUITE 60
+RUN_N_MAX="${RUN_N_MAX:-25}"
+if (( N > RUN_N_MAX )); then
+    echo "⛔ N=$N is above the cap of $RUN_N_MAX runs. Each run calls a model and costs money." >&2
+    echo "   If you mean it: RUN_N_MAX=$N bash run-n.sh $SUITE $N" >&2
+    exit 2
+fi
 cd "$SUITE" 2>/dev/null || { echo "⛔ suite directory not found: $SUITE" >&2; exit 2; }
 
 TMP="$(mktemp -d)"
@@ -63,8 +71,9 @@ for i in $(seq 1 "$N"); do
     # 🔑 Read the RESULTS file. promptfoo's exit code is deliberately ignored; see the header.
     # The total and the error count travel with the pass count: a pass count without the number
     # of cases it was out of cannot tell 0 of 0 from 4 of 4.
-    read -r p t e < <(python3 "$HERE/run_n_summary.py" parse "$out")
-    PASSES+=("$p/$t/$e")
+    # The fourth field fingerprints WHICH cases ran, so equal counts over different cases are caught.
+    read -r p t e s < <(python3 "$HERE/run_n_summary.py" parse "$out")
+    PASSES+=("$p/$t/$e/$s")
     printf "  run %-2s  %s / %s  (errors: %s)\n" "$i" "$p" "$t" "$e"
 done
 

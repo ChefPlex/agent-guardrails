@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """The parsing and summary logic behind run-n.sh, kept here so it can be tested directly.
 
-    python3 run_n_summary.py parse RESULTS.json      # prints "<passes> <total> <errors>" or "NA NA NA"
-    python3 run_n_summary.py summarise P/T/E ...     # one "passes/total/errors" per run; exit code is the verdict
+    python3 run_n_summary.py parse RESULTS.json      # prints "<passes> <total> <errors> <suite>" or "NA NA NA NA"
+    python3 run_n_summary.py summarise P/T/E/S ...   # one "passes/total/errors/suite" per run; exit code is the verdict
+
+`suite` is a fingerprint of WHICH cases ran (each case's description, vars, prompt and provider),
+or "-" when the results file carries no per-case rows. Equal counts are not equal suites: 3 of 4
+on cases A-D and 3 of 4 on cases E-H would otherwise read as a stable result.
 
 Exit codes for `summarise`:
     0  every run parsed, ran the same non-zero number of cases with no errors, and the pass
@@ -12,6 +16,7 @@ Exit codes for `summarise`:
        the runs executed different numbers of cases, or a case errored
     3  the runs parsed, ran the same cases, and DISAGREED with each other
 """
+import hashlib
 import json
 import statistics
 import sys
@@ -19,8 +24,31 @@ import sys
 OK, INSTRUMENT_FAILURE, DISAGREED = 0, 1, 3
 
 
+def suite_fingerprint(rows):
+    """A short hash of WHICH cases ran, independent of their order and of whether they passed.
+
+    Returns "-" when there are no per-case rows to fingerprint. That is "unknown", and summarise()
+    says so rather than treating it as a match."""
+    if not isinstance(rows, list) or not rows:
+        return "-"
+    ids = []
+    for x in rows:
+        if not isinstance(x, dict):
+            continue
+        tc = x.get("testCase") if isinstance(x.get("testCase"), dict) else {}
+        prompt = x.get("prompt") if isinstance(x.get("prompt"), dict) else {}
+        provider = x.get("provider")
+        provider = provider.get("id") if isinstance(provider, dict) else provider
+        ids.append(json.dumps({"d": tc.get("description"), "v": x.get("vars", tc.get("vars")),
+                               "p": prompt.get("label") or prompt.get("raw"), "m": provider},
+                              sort_keys=True, default=str))
+    if not ids:
+        return "-"
+    return hashlib.sha256("\n".join(sorted(ids)).encode()).hexdigest()[:12]
+
+
 def parse(path):
-    """Return (passes, total, errors) from a promptfoo results file, or None if it cannot be read.
+    """Return (passes, total, errors, suite) from a promptfoo results file, or None if unreadable.
 
     ⛔ This reads the RESULTS FILE. The runner's exit code is never consulted, because it
     varies with promptfoo's version and environment settings and does not separate a failed
@@ -39,23 +67,26 @@ def parse(path):
     if not isinstance(r, dict):
         return None
     stats = r.get("stats") or {}
+    rows = r.get("results")
     succ, fail, err = stats.get("successes"), stats.get("failures"), stats.get("errors")
     if succ is None:
-        rows = r.get("results")
         if not isinstance(rows, list):
             return None
         succ = sum(1 for x in rows if isinstance(x, dict) and x.get("success"))
         fail, err = len(rows) - succ, 0
     succ, fail, err = int(succ), int(fail or 0), int(err or 0)
-    return succ, succ + fail + err, err
+    return succ, succ + fail + err, err, suite_fingerprint(rows)
 
 
 def _run(token):
-    """One run's "passes/total/errors" token as three ints, or None for an unparsed run."""
+    """One run's "passes/total/errors[/suite]" token as (p, t, e, suite), or None if unparsed.
+
+    A token without a suite field (the older three-part form) gets suite "-": unknown."""
     parts = str(token).split("/")
-    if len(parts) != 3 or not all(p.isdigit() for p in parts):
+    if len(parts) not in (3, 4) or not all(p.isdigit() for p in parts[:3]):
         return None
-    return tuple(int(p) for p in parts)
+    suite = parts[3] if len(parts) == 4 and parts[3] not in ("", "NA") else "-"
+    return int(parts[0]), int(parts[1]), int(parts[2]), suite
 
 
 def summarise(raw):
@@ -69,9 +100,10 @@ def summarise(raw):
     if not runs:
         return (["  ⚠️ NO PARSEABLE RESULTS: that is an instrument failure, not a clean sheet."],
                 INSTRUMENT_FAILURE)
-    vals = [p for p, _, _ in runs]
-    totals = sorted({t for _, t, _ in runs})
-    errors = sum(e for _, _, e in runs)
+    vals = [p for p, _, _, _ in runs]
+    totals = sorted({t for _, t, _, _ in runs})
+    errors = sum(e for _, _, e, _ in runs)
+    suites = {s for _, _, _, s in runs}
     lo, hi = min(vals), max(vals)
     mean = statistics.mean(vals)
     sd = statistics.pstdev(vals) if len(vals) > 1 else 0.0
@@ -90,6 +122,14 @@ def summarise(raw):
     if errors:
         problems.append(f"  ⚠️ {errors} case(s) ERRORED across the runs: the runner broke, not the "
                         "model. That is an instrument failure.")
+    known = suites - {"-"}
+    if len(known) > 1:
+        problems.append(f"  ⚠️ THE RUNS EXECUTED DIFFERENT CASES ({len(known)} distinct suites), even "
+                        "where the counts match. Their pass counts cannot be compared; that is an "
+                        "instrument failure.")
+    elif "-" in suites:
+        lines.append("  ⚠️ Case identity was not recorded for every run, so the runs are compared "
+                     "by COUNT only. Equal counts do not prove the same cases ran.")
 
     code = OK
     if lo != hi and len(totals) == 1:
@@ -117,7 +157,7 @@ def summarise(raw):
 def main(argv):
     if len(argv) >= 3 and argv[1] == "parse":
         got = parse(argv[2])
-        print("NA NA NA" if got is None else f"{got[0]} {got[1]} {got[2]}")
+        print("NA NA NA NA" if got is None else f"{got[0]} {got[1]} {got[2]} {got[3]}")
         return 0
     if len(argv) >= 2 and argv[1] == "summarise":
         lines, code = summarise(argv[2:])

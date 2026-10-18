@@ -77,7 +77,9 @@ wrong answers read as corroboration.
 
 **Who reads the output, and how failure shows:** the caller, usually a test or a scheduled sweep.
 `compare()` returns a result that is falsy on disagreement and names both sides; `report()` returns
-1 if any population disagrees, for the caller to use as its exit code.
+1 if any population disagrees and 2 if it was given nothing to compare, for the caller to use as
+its exit code. An empty list is never reported as agreement: a check that compared nothing has not
+passed.
 
 ## `run-n.sh` - report the spread, and never the exit code
 
@@ -104,8 +106,8 @@ count is read together with its total and its error count:
 | Exit | Meaning |
 |:---|:---|
 | `0` | Every run parsed, ran the same non-zero number of cases with no errors, and the pass counts agreed. This is **agreement, not a pass**: 0 of 4 every time also exits `0`, and is printed in red. |
-| `1` | Instrument failure: no run produced parseable results, not every run did, a run executed zero cases, the runs executed different numbers of cases, or a case errored. |
-| `2` | Usage error, or the suite directory was not found. |
+| `1` | Instrument failure: no run produced parseable results, not every run did, a run executed zero cases, the runs executed different numbers of cases, the runs executed **different cases** (each run's case identities are fingerprinted, so 3 of 4 on cases A-D and 3 of 4 on E-H is not "stable"), or a case errored. |
+| `2` | Usage error, the suite directory was not found, or N is above the cap. Every run calls a model, so N is a spend: the default cap is 25, raised deliberately with `RUN_N_MAX`. |
 | `3` | The runs ran the same cases and disagreed. |
 
 A CI step that needs a pass rate should read the printed counts, not exit `0`.

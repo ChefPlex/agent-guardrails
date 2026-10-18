@@ -81,6 +81,8 @@ check(rc_ok == 0, "report() exits 0 when every population agrees")
 rc_bad = sp.report([sp.compare("a", [1], [1]), sp.compare("b", [2], [3])])
 check(rc_bad == 1, "report() exits 1 when any population disagrees")
 check(rc_ok != rc_bad, "report()'s exit code discriminates")
+rc_empty = sp.report([])
+check(rc_empty == 2, "report([]) is an instrument failure (2), never 'all zero agree' (0)")
 
 print()
 if FAILURES:

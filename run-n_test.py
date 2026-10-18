@@ -97,12 +97,38 @@ with tempfile.TemporaryDirectory() as d:
     (d / "c.json").write_text("not json")
     (d / "e.json").write_text(json.dumps({"results": "nope"}))
     (d / "f.json").write_text(json.dumps(stats_shape(2, 4, errors=1)))
-    check(rs.parse(d / "a.json") == (3, 4, 0), "the stats shape parses to (passes, total, errors)")
-    check(rs.parse(d / "b.json") == (2, 5, 0), "the per-row shape parses to (passes, total, 0)")
-    check(rs.parse(d / "f.json") == (2, 4, 1), "errored cases count toward the total, never passes")
+    check(rs.parse(d / "a.json") == (3, 4, 0, "-"),
+          "the stats shape parses to (passes, total, errors, suite); no rows, so suite is '-'")
+    _b = rs.parse(d / "b.json")
+    check(_b[:3] == (2, 5, 0) and len(_b[3]) == 12,
+          "the per-row shape parses to (passes, total, 0) plus a 12-char suite fingerprint")
+    check(rs.parse(d / "f.json")[:3] == (2, 4, 1), "errored cases count toward the total, never passes")
     check(rs.parse(d / "c.json") is None, "invalid JSON is None, never zero passes")
     check(rs.parse(d / "missing.json") is None, "a missing file is None, never zero passes")
     check(rs.parse(d / "e.json") is None, "an unexpected shape is None, never zero passes")
+
+# ── the suite fingerprint: equal COUNTS over different CASES are not one result ──────────────
+print("\nsuite fingerprint")
+
+
+def _cases(names, passing):
+    return [{"success": n in passing, "testCase": {"description": n}, "vars": {"q": n}}
+            for n in names]
+
+
+_ad = rs.suite_fingerprint(_cases("ABCD", "ABC"))
+check(_ad == rs.suite_fingerprint(_cases("DCBA", "D")),
+      "the same cases give the same fingerprint, whatever their order or outcome")
+check(_ad != rs.suite_fingerprint(_cases("EFGH", "EFG")),
+      "different cases give a different fingerprint even at the same 3 of 4")
+lines, code = rs.summarise([f"3/4/0/{_ad}", f"3/4/0/{rs.suite_fingerprint(_cases('EFGH', 'EFG'))}"])
+check(code == rs.INSTRUMENT_FAILURE and "DIFFERENT CASES" in "\n".join(lines),
+      "3 of 4 on cases A-D and 3 of 4 on E-H is an instrument failure, never 'stable'")
+lines, code = rs.summarise([f"4/4/0/{_ad}", f"4/4/0/{_ad}"])
+check(code == rs.OK, "the same suite twice still agrees")
+lines, code = rs.summarise(["4/4/0", "4/4/0"])
+check(code == rs.OK and "COUNT only" in "\n".join(lines),
+      "a run without case identity still works, and says it compared counts only")
 
 # ── summarise(): the verdict is the exit code ────────────────────────────────────────────────
 print("\nsummarise")
@@ -181,6 +207,9 @@ rc, out, _ = run_script([], suite=False)
 check(rc == 2 and "usage" in out, f"no suite argument is a usage error, exit 2 (got {rc})")
 rc, out, _ = run_script([stats_shape(1, 1)], n="zero")
 check(rc == 2, f"a non-numeric N is a usage error, exit 2 (got {rc})")
+rc, out, log = run_script([stats_shape(1, 1)], n=500)
+check(rc == 2 and "cap" in out and log == "",
+      f"N=500 is refused above the default cap of 25, before any run is paid for (got {rc})")
 r = subprocess.run(["bash", str(SH), "/nonexistent/suite", "1"], capture_output=True, text=True,
                    check=False)
 check(r.returncode == 2 and "not found" in r.stderr, "a missing suite directory exits 2")
