@@ -1,0 +1,27 @@
+# A real promptfoo suite that costs nothing: the `echo` provider returns the prompt itself, so no
+# model is called. It exists to test run-n.sh against promptfoo's ACTUAL results file, which the
+# fake-npx tests in run-n_test.py cannot do. Two cases pass and one fails by design, every run.
+description: run-n integration smoke suite (echo provider, no model call)
+prompts:
+  - "Status: {{status}}"
+providers:
+  - echo
+tests:
+  - description: green is echoed
+    vars:
+      status: green
+    assert:
+      - type: contains
+        value: green
+  - description: yellow is echoed
+    vars:
+      status: yellow
+    assert:
+      - type: contains
+        value: yellow
+  - description: deliberate failure, so a stable result is 2 of 3 rather than a flattering 3 of 3
+    vars:
+      status: red
+    assert:
+      - type: contains
+        value: blue

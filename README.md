@@ -143,8 +143,19 @@ python3 run-n_test.py
 ```
 
 `run-n_test.py` runs the real script end to end against a fake `npx` that writes fixture results and
-always exits 0 whatever the results say, so the only way to pass is to read the results. It does not run real promptfoo or call a model, so a change in
-promptfoo's output format is not covered; that case shows up as exit 1, "no parseable results".
+always exits 0 whatever the results say, so the only way to pass is to read the results. It does
+not run real promptfoo, so it cannot notice a change in promptfoo's output format.
+
+That gap has its own opt-in test, which runs the pinned promptfoo for real at no model cost:
+
+```bash
+python3 run-n_integration_test.py   # needs Node; fetches promptfoo on first run; no API key, no spend
+```
+
+It runs `integration/echo-suite`, whose `echo` provider returns the prompt instead of calling a
+model, with two cases that pass and one that fails by design. It checks that the real results file
+parses to 2 of 3 with per-case fingerprints, and that `run-n.sh` reports two runs as stable at 2 of
+3. Run it after changing the pinned `PROMPTFOO_VERSION`.
 `injection_scan_test.py` also runs a real-corpus gate over known-clean text you place in
 `corpus/clean/` (`corpus/` is gitignored). A fresh clone has no corpus, so its last line reads "real-corpus gate NOT RUN".
 
