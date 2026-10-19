@@ -2,7 +2,9 @@
 
 Three checks for AI agent workflows that refuse to report a pass they did not earn.
 
-All three came out of running an always-on personal agent stack and finding, repeatedly, that the
+All three came out of building and running a personal AI operations platform, an always-on
+multi-agent system with per-agent identity, provenance checks on untrusted input and
+human-in-the-loop gating, and finding, repeatedly, that the
 controls I had written were reporting health they had never verified. They are deliberately small.
 `injection_scan.py` and `second_path.py` need only the Python 3 standard library. `run-n.sh` needs
 bash, Node (it calls `npx promptfoo`, because it drives an external eval runner) and Python 3 (its
