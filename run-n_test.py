@@ -65,7 +65,7 @@ sys.exit(0)   # an exit code that says nothing about the results; the script mus
 """
 
 
-def run_script(fixtures, n=None, suite=True):
+def run_script(fixtures, n=None, suite=True, extra_env=None):
     """Run run-n.sh with a fake npx. `fixtures` is a list of dicts, or "SKIP" for no output."""
     with tempfile.TemporaryDirectory() as d:
         d = Path(d)
@@ -78,6 +78,8 @@ def run_script(fixtures, n=None, suite=True):
         for i, fx in enumerate(fixtures):
             (queue / f"run{i:03d}.json").write_text(fx if fx == "SKIP" else json.dumps(fx))
         env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}", FAKE_QUEUE=str(queue))
+        env.pop("RUN_N_MAX", None)
+        env.update(extra_env or {})
         args = ["bash", str(SH)]
         if suite:
             args.append(str(suite_dir))
@@ -210,6 +212,16 @@ check(rc == 2, f"a non-numeric N is a usage error, exit 2 (got {rc})")
 rc, out, log = run_script([stats_shape(1, 1)], n=500)
 check(rc == 2 and "cap" in out and log == "",
       f"N=500 is refused above the default cap of 25, before any run is paid for (got {rc})")
+with tempfile.TemporaryDirectory() as d:
+    marker = Path(d) / "pwned"
+    rc, out, log = run_script([stats_shape(1, 1)], n=500,
+                              extra_env={"RUN_N_MAX": f"a[$(touch {marker})]"})
+    check(rc == 2 and "RUN_N_MAX" in out and log == "" and not marker.exists(),
+          f"a RUN_N_MAX that is not a number is refused and never evaluated (got {rc})")
+rc, out, log = run_script([stats_shape(1, 1)], n=500, extra_env={"RUN_N_MAX": "25)"})
+check(rc == 2 and log == "", f"a malformed RUN_N_MAX does not skip the cap (got {rc})")
+rc, out, log = run_script([stats_shape(1, 1)] * 3, n=3, extra_env={"RUN_N_MAX": "3"})
+check(rc != 2 and log != "", f"N equal to a raised cap still runs (got {rc})")
 r = subprocess.run(["bash", str(SH), "/nonexistent/suite", "1"], capture_output=True, text=True,
                    check=False)
 check(r.returncode == 2 and "not found" in r.stderr, "a missing suite directory exits 2")

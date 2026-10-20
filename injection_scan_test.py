@@ -16,7 +16,8 @@ Run: python3 injection_scan_test.py
 import pathlib
 import sys
 
-from injection_scan import PATTERNS, scan
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from injection_scan import PATTERNS, scan  # noqa: E402
 
 # The severity each label is declared with. A label or a fence must leave a finding at exactly this.
 DECLARED_SEVERITY = {label: sev for sev, label, _, _ in PATTERNS}

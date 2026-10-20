@@ -50,6 +50,12 @@ fi
 # Every run calls a model, so N is also a spend. A cap stops a typo (500 for 5) from becoming
 # a large bill. Raise it deliberately: RUN_N_MAX=100 bash run-n.sh SUITE 60
 RUN_N_MAX="${RUN_N_MAX:-25}"
+# Checked as text first: (( )) would evaluate the value as arithmetic, so a malformed cap could
+# run a command, or fail the comparison silently and skip the cap.
+if [[ ! "$RUN_N_MAX" =~ ^[1-9][0-9]*$ ]]; then
+    echo "⛔ RUN_N_MAX must be a positive integer, got: $RUN_N_MAX" >&2
+    exit 2
+fi
 if (( N > RUN_N_MAX )); then
     echo "⛔ N=$N is above the cap of $RUN_N_MAX runs. Each run calls a model and costs money." >&2
     echo "   If you mean it: RUN_N_MAX=$N bash run-n.sh $SUITE $N" >&2
