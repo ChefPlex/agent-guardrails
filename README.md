@@ -73,7 +73,9 @@ The same logic applies to agents checking agents. A differently shaped method br
 diversity: it would still find the item if the first method's assumption were wrong. N agents that
 share a model, a prompt shape and a sourcing method are closer to one sample drawn N times, so
 their agreement is not verification. They can all inherit the same blind spot, and N identical
-wrong answers read as corroboration.
+wrong answers read as corroboration. METR saw the same shape at scale: in its
+[investigation of an OpenAI and Hugging Face incident](https://metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/),
+a false belief spread across many agents through a shared message board.
 
 **Who reads the output, and how failure shows:** the caller, usually a test or a scheduled sweep.
 `compare()` returns a result that is falsy on disagreement and names both sides; `report()` returns
