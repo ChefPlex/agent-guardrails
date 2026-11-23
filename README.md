@@ -39,7 +39,7 @@ principle visible at ingestion time.
 **Tuning bias:** false positives are cheap, false negatives are not. If you disagree, change it
 deliberately rather than by loosening a pattern that fired on you once.
 
-**Measured noise:** run over 478 third-party markdown files, it fired on 28, and none of the 28 was
+**Measured noise** (2026-09-09, on the version this was extracted from; the patterns here have been widened since and not re-measured): run over 478 third-party markdown files, it fired on 28, and none of the 28 was
 a real attack. Every hit was a document quoting an attack in order to defend against it, which is
 why those hits carry a "likely security documentation" label (a label, never a filter). Recall,
 meaning how many real attacks it misses, has not been measured.
