@@ -136,6 +136,22 @@ Anything else that runs that suite should do the same.
 
 ---
 
+## Where these fit: an autonomy ladder
+
+The more an agent does on its own, the more of the control has to live in code rather than in a person reading the output. The ladder below uses the five tiers from [AI Execution Tiers](https://github.com/ChefPlex/ai-automations/blob/main/frameworks/ai-execution-tiers.md). It is my practice, not a standard.
+
+| Tier | Who does the work | The control it needs | Where these checks help |
+|:---|:---|:---|:---|
+| 1. Human-only | A person | None beyond normal review | |
+| 2. Humans drive, AI speeds up | A person, with AI drafting | A person reads every output before it is used | `injection_scan.py` on any untrusted text the AI read |
+| 3. Humans ideate, AI creates | AI, from a person's brief | Review before use, and a quality claim backed by more than one run | `run-n.sh` for the spread |
+| 4. AI drives, humans review | AI, with a named reviewer | A named person who can stop it, approvals that block by default, permissions set in code | `second_path.py` for what the review never counted |
+| 5. AI-only | AI | Limits set in code: scoped credentials, spend ceilings, alerts to a named owner, and a sampled audit | All three, run on a schedule rather than by hand |
+
+A rung is earned with evidence, not assumed. Move an activity up only when the controls for the new rung exist and have been seen to fire.
+
+---
+
 ## Running the tests
 
 ```bash
