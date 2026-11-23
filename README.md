@@ -10,7 +10,7 @@ parsing lives in `run_n_summary.py`).
 
 ---
 
-## `injection_scan.py` - a prompt-injection tripwire for untrusted text
+## `injection_scan.py` - a prompt-injection alarm for untrusted text
 
 Screens text that arrived from outside your system - an email body, a fetched page, a job posting,
 another agent's reply - for the shapes a prompt injection takes: instruction override, exfiltration,
@@ -22,8 +22,8 @@ python3 injection_scan.py suspicious.txt        # exit 0 clean, 1 findings or un
 cat something.txt | python3 injection_scan.py -
 ```
 
-**What it is not, stated plainly, because this is the part people get wrong.** A regex screen is a
-**tripwire, not a defense**. It catches the lazy and the careless. It will not catch paraphrase,
+**What it is not, stated plainly, because this is the part people get wrong.** A regex screen is an
+**alarm, not a defense**. It catches the lazy and the careless. It will not catch paraphrase,
 an encoded payload that arrives without an instruction to decode it, translation, or an instruction
 split across sentences. It does not normalize Unicode, and it does not look for Unicode tag
 characters, bidirectional controls, or a single zero-width character inside a word. **A clean scan means "nothing

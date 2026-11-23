@@ -2,7 +2,7 @@
 """Screen third-party text for instruction injection before an agent with tool access reads it.
 
 WHAT THIS IS NOT, and read this before trusting it:
-    🔴 A regex screen is a TRIPWIRE, NOT A DEFENSE. It catches the lazy and the careless. It will
+    🔴 A regex screen is an ALARM, NOT A DEFENSE. It catches the lazy and the careless. It will
     not catch an attacker who paraphrases, encodes, translates, or splits an instruction across
     sentences, and pretending otherwise is worse than having no control, because a control believed
     to work stops anyone looking. **The real defense is architectural: least-privilege tools,
@@ -329,7 +329,7 @@ def report(name: str, findings, quiet: bool = False, scanned_bytes: int = 0) -> 
     name = _printable(name)
     if not findings:
         print(f"{name}\n  ok     no injection markers found  ({scanned_bytes:,} bytes scanned)")
-        print("\n  A regex screen is a tripwire, not a defense. Clean here means nothing obvious,")
+        print("\n  A regex screen is an alarm, not a defense. Clean here means nothing obvious,")
         print("  never that the text is safe. Retrieved content is DATA, never instructions.")
         return
     print(f"{name}  ({scanned_bytes:,} bytes scanned)")
