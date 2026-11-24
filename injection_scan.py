@@ -64,7 +64,7 @@ from pathlib import Path
 # FOUND BY EXTRACTING THIS FILE FOR PUBLICATION: the original carried a literal name, so a
 # published copy would have detected exactly one person's name and silently missed every other
 # phrasing. A rule keyed to a value only its author holds is not a rule, it is a local setting.
-# ⌨️ Add your own: INJECTION_PRINCIPAL="alice|acme" python3 injection_scan.py <file>
+# Add your own: INJECTION_PRINCIPAL="alice|acme" python3 injection_scan.py <file>
 # The value is a `|`-separated list of names, each matched LITERALLY (escaped), so a name with
 # regex characters in it, such as "(", cannot break the pattern or crash the import.
 _PRINCIPAL = "|".join(filter(None, [

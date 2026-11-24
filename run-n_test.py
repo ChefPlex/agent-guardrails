@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for run-n.sh and run_n_summary.py. Run: python3 run-n_test.py
 
-⛔ These do NOT call a model. They run the REAL script end to end with a fake `npx` first on PATH:
+These do NOT call a model. They run the REAL script end to end with a fake `npx` first on PATH:
 the fake writes a fixture results file to wherever `-o` points and ALWAYS exits 0, whatever the
 results say, so the script can only get the verdict right by reading the results. So every
 assertion below is about what the script does with real input, not about which strings its source
@@ -14,7 +14,7 @@ What they pin:
   ④ a pass count is read with its total: zero cases, mismatched totals or an errored case is an
     instrument failure, and 0 passes is never printed green
 
-⚠️ NOT COVERED: real promptfoo. The results-file shapes below are the two this parser handles; if
+NOT COVERED: real promptfoo. The results-file shapes below are the two this parser handles; if
 a future promptfoo version changes its output format, these tests will still pass and the real run
 will report NO PARSEABLE RESULTS (exit 1). That is the intended failure: loud, not silent.
 """
@@ -151,7 +151,7 @@ check("1 of 3" in "\n".join(lines), "and says how many runs it could not read")
 lines, code = rs.summarise(["4", "4"])
 check(code == rs.INSTRUMENT_FAILURE, "a pass count with no total is unparsed, never a pass")
 
-# Zero cases, mismatched totals, errors, and zero passes: each of these printed 🟢 and exited 0
+# Zero cases, mismatched totals, errors, and zero passes: each of these printed green and exited 0
 # before the totals were passed through.
 lines, code = rs.summarise(["0/0/0", "0/0/0"])
 text = "\n".join(lines)
@@ -190,8 +190,8 @@ check("NO PARSEABLE RESULTS" in out, "and says it is an instrument failure")
 rc, out, _ = run_script([rows_shape(2, 2), "SKIP"], n=2)
 check(rc == 1, f"one parsed run and one missing exits 1 (got {rc})")
 
-# 🔴 The zero-case fixture. promptfoo wrote a valid results file that ran nothing, twice. The old
-# script passed only the pass count, saw 0 and 0 agree, and printed 🟢 with exit 0.
+# The zero-case fixture. promptfoo wrote a valid results file that ran nothing, twice. The old
+# script passed only the pass count, saw 0 and 0 agree, and printed green with exit 0.
 rc, out, _ = run_script([stats_shape(0, 0)] * 2, n=2)
 check(rc == 1, f"🔴 two runs of ZERO cases exit 1, never 0 (got {rc})")
 check("🟢" not in out and "ZERO cases" in out, "and are never printed green")

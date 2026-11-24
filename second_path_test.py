@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for second_path.py. Run: python3 second_path_test.py
 
-⛔ Every assertion must be able to FAIL. Each behaviour is exercised against BOTH an agreeing and a
+Every assertion must be able to FAIL. Each behaviour is exercised against BOTH an agreeing and a
 disagreeing population, and the test asserts the two outcomes DIFFER — a `compare` that returned
 `agree=True` unconditionally would pass the positive cases and be caught by the negative ones.
 That is a defect recorded on 2026-09-02, when a test used the live repo as its own
