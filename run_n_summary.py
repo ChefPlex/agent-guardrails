@@ -50,7 +50,7 @@ def suite_fingerprint(rows):
 def parse(path):
     """Return (passes, total, errors, suite) from a promptfoo results file, or None if unreadable.
 
-    ⛔ This reads the RESULTS FILE. The runner's exit code is never consulted, because it
+    This reads the RESULTS FILE. The runner's exit code is never consulted, because it
     varies with promptfoo's version and environment settings and does not separate a failed
     case from a broken runner.
 

@@ -83,12 +83,16 @@ a false belief spread across many agents through a shared message board.
 its exit code. An empty list is never reported as agreement: a check that compared nothing has not
 passed.
 
+It compares **sets**, so duplicates collapse: an item listed twice by one method and once by the
+other counts as agreement. Deduplicate deliberately before calling it if a count matters. And it
+cannot tell whether your two methods were really independent; that is the caller's design.
+
 ## `run-n.sh` - report the spread, and never the exit code
 
 An eval suite that calls a model is not deterministic. One run of mine scored **3/4** and an
 immediate re-run, identical inputs, no code change, scored **4/4**.
 
-**So a single green run is not evidence, and a single red one is not either.** Without a measured
+**So a single green run is weak evidence, and a single red one is too.** Without a measured
 noise floor, no change can honestly be called an improvement - a before/after of two single runs
 cannot separate a real effect from sampling noise or a silent model update on the provider's side.
 
@@ -114,8 +118,9 @@ count is read together with its total and its error count:
 
 A CI step that needs a pass rate should read the printed counts, not exit `0`.
 
-When the runs disagree it says so outright, and names the consequence: *any before/after claim
-smaller than that spread is noise, not a result.* When they agree it calls that a **noise floor, not
+When the runs disagree it says so outright, and names the consequence: *a before/after
+difference smaller than that spread is not established by this summary; it needs a proper
+comparison before anyone calls it an improvement.* When they agree it calls that a **noise floor, not
 a guarantee**, because stability over a few runs is weak evidence and not determinism. It never
 prints green beside zero passes.
 

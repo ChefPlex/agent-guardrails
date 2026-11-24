@@ -228,5 +228,13 @@ check(r.returncode == 2 and "not found" in r.stderr, "a missing suite directory 
 
 print("\n" + ("ALL TESTS PASSED" if not fails else f"{len(fails)} FAILED:"))
 for f in fails:
-    print("  ✗ " + f)
-sys.exit(1 if fails else 0)
+    print("  x " + f)
+
+
+def test_run_n():
+    """Under pytest: the checks above ran at import; this reports their result."""
+    assert not fails, f"{len(fails)} run-n check(s) failed: {fails}"
+
+
+if __name__ == "__main__":
+    sys.exit(1 if fails else 0)

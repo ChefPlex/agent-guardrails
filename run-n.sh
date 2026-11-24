@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # run-n.sh: run a promptfoo suite N times and report the SPREAD, not one number.
 #
-# 🔴 WHY THIS EXISTS. Measured in the stack this came out of: one run of the suite
+# WHY THIS EXISTS. Measured in the stack this came out of: one run of the suite
 # scored 3/4 and an IMMEDIATE re-run, identical inputs, no code change, scored 4/4. The suite is
 # non-deterministic (it calls a model), so **a single green run is not evidence of anything**, and
 # a single red one is not either.
 #
-# 🔑 WITHOUT A MEASURED NOISE FLOOR, NO CHANGE HERE CAN HONESTLY BE CALLED AN IMPROVEMENT. A
+# WITHOUT A MEASURED NOISE FLOOR, NO CHANGE HERE CAN HONESTLY BE CALLED AN IMPROVEMENT. A
 # before/after comparison of two single runs cannot tell a real effect from sampling noise or from
 # a silent model update on the provider's side.
 #
-# ⛔ AND IT PARSES RESULTS, NEVER PROMPTFOO'S EXIT CODE. promptfoo documents exit 100 on any failed
+# AND IT PARSES RESULTS, NEVER PROMPTFOO'S EXIT CODE. promptfoo documents exit 100 on any failed
 # case, but PROMPTFOO_FAILED_TEST_EXIT_CODE and PROMPTFOO_PASS_RATE_THRESHOLD change it, and a run
 # on 2026-09-10 (version not recorded) exited 0 with 3 of 4 passing. The code also cannot tell a
 # failed case from a broken runner. Anything that gates on `$?` from promptfoo is reading a number
@@ -74,7 +74,7 @@ PASSES=()
 for i in $(seq 1 "$N"); do
     out="$TMP/run$i.json"
     npx --yes "promptfoo@$PROMPTFOO_VERSION" eval --no-cache -o "$out" >/dev/null 2>&1
-    # 🔑 Read the RESULTS file. promptfoo's exit code is deliberately ignored; see the header.
+    # Read the RESULTS file. promptfoo's exit code is deliberately ignored; see the header.
     # The total and the error count travel with the pass count: a pass count without the number
     # of cases it was out of cannot tell 0 of 0 from 4 of 4.
     # The fourth field fingerprints WHICH cases ran, so equal counts over different cases are caught.

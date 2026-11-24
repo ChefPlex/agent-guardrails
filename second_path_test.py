@@ -86,8 +86,15 @@ check(rc_empty == 2, "report([]) is an instrument failure (2), never 'all zero a
 
 print()
 if FAILURES:
-    print(f"🔴 {len(FAILURES)} FAILED:")
+    print(f"{len(FAILURES)} FAILED:")
     for f in FAILURES:
         print(f"   - {f}")
-    sys.exit(1)
-print("🟢 all second_path tests pass")
+    if __name__ == "__main__":
+        sys.exit(1)
+else:
+    print("all second_path tests pass")
+
+
+def test_second_path():
+    """Under pytest: the checks above ran at import; this reports their result."""
+    assert not FAILURES, f"{len(FAILURES)} second_path check(s) failed: {FAILURES}"

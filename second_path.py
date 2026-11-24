@@ -30,13 +30,13 @@ MEASURED FIVE TIMES, and only one of the five was caught by a check rather than 
 Every one is a single-path enumeration that UNDER-reported, and every one would have been caught
 immediately by counting again a different way.
 
-⛔ THE SECOND PATH MUST BE DIFFERENTLY SHAPED. A checksum over the same query is not a second path:
+THE SECOND PATH MUST BE DIFFERENTLY SHAPED. A checksum over the same query is not a second path:
 it re-derives the same blind spot and returns green with more ceremony. The test to apply is
 *would this method still find the item if the first method's assumption were wrong?* Running the
 same glob twice does not qualify. A filesystem walk against a git listing does; a declared list
 against the credentials actually stored does.
 
-⚖️ DISAGREEMENT IS A FINDING, NOT AUTOMATICALLY A BUG. Two paths may legitimately differ — a
+DISAGREEMENT IS A FINDING, NOT AUTOMATICALLY A BUG. Two paths may legitimately differ — a
 gitignored directory is absent from git and present on disk on purpose. So this reports the
 symmetric difference and names both sides. It does not assume which side is right; deciding that
 is the caller's job, and `expected` carries the differences already adjudicated.
@@ -93,7 +93,7 @@ def compare(label, a, b, *, name_a="path A", name_b="path B", expected=(), limit
 
     used = sorted(ex & (sa | sb))
     if agree:
-        # ⚠️ Do NOT write "{a} == {b}" when `expected` excluded something: the raw counts can
+        # Do NOT write "{a} == {b}" when `expected` excluded something: the raw counts can
         # legitimately differ while the populations agree, and "38 == 39" is a false statement
         # printed by a check whose whole job is to catch false statements about counts.
         if used:
